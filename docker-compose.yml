@@ -1,0 +1,94 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: djangoadvent_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/postgres.env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U djangoadvent -d djangoadvent" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: djangoadvent_redis
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+    container_name: djangoadvent_backend
+    command: bash -c " python manage.py makemigrations && \
+      python manage.py migrate && \
+      python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+      - ./backend/postgres.env
+      - ./backend/celery.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+  
+  ui:
+    build:
+      context: ./frontend
+    container_name: djangoadvent_fronted
+    command: npm run dev --host=0.0.0.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src/:/app/src
+    depends_on:
+      - db
+      - backend
+
+
+  celery_worker:
+    build:
+      context: ./backend
+    container_name: djangoadvent_celery_worker
+    command: celery -A core worker -l info
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+      - ./backend/postgres.env
+      - ./backend/celery.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  celery_beat:
+    build:
+      context: ./backend
+    container_name: djangoadvent_celery_beat
+    command: celery -A core beat -l info
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+      - ./backend/postgres.env
+      - ./backend/celery.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  postgres_data:
+
