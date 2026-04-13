@@ -37,7 +37,11 @@ SECRET_KEY = django_settings.SECRET_KEY
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = django_settings.DEBUG
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = [
+    origin.strip()
+    for origin in django_settings.ALLOWED_HOSTS.split(",")
+    if origin.strip()
+]
 
 
 # Application definition
@@ -187,10 +191,7 @@ SPECTACULAR_SETTINGS = {
 
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv(
-        "CORS_ALLOWED_ORIGINS",
-        "http://127.0.0.1:3000,http://localhost:3000",
-    ).split(",")
+    for origin in django_settings.CORS_ALLOWED_ORIGINS.split(",")
     if origin.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True

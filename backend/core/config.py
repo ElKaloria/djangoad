@@ -9,7 +9,8 @@ class DjangoSettings(BaseSettings):
 
     DEBUG: bool = Field(default=False)
     SECRET_KEY: str
-    ALLOWED_HOSTS: str
+    ALLOWED_HOSTS: str = Field(default="127.0.0.1,localhost")
+    CORS_ALLOWED_ORIGINS: str = Field(default="http://127.0.0.1:3000,http://localhost:3000")
 
 
 class PostgresSettings(BaseSettings):
